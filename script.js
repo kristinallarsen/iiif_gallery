@@ -159,3 +159,15 @@ document.getElementById('saveCollection').addEventListener('click', async () => 
     alert('Failed to save collection. Check console for details.');
   }
 });
+
+document.getElementById('generateLink').addEventListener('click', () => {
+  const title = document.getElementById('pageTitle').value;
+  const manifestUrls = Array.from(document.querySelectorAll('#gallery .card img')).map(img => img.src.split('/full/')[0] + '/info.json');
+
+  const queryParams = new URLSearchParams();
+  if (title) queryParams.set('title', encodeURIComponent(title));
+  if (manifestUrls.length > 0) queryParams.set('manifests', manifestUrls.map(url => encodeURIComponent(url)).join(','));
+
+  const url = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
+  prompt('Shareable URL:', url);
+});
