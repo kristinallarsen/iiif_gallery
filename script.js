@@ -7,18 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
     tileSources: []
   });
 
-  // Load state from URL if available
   const queryParams = new URLSearchParams(window.location.search);
   const title = queryParams.get('title');
   const manifests = queryParams.get('manifests');
-  
+
   if (title) {
     document.getElementById('page-title').textContent = title;
     document.getElementById('pageTitle').value = title;
   }
 
   if (manifests) {
-    const manifestUrlArray = manifests.split(',').map(decodeURIComponent);
+    const manifestUrlArray = decodeURIComponent(manifests).split(',');
     manifestUrlArray.forEach((manifest) => addManifestToGallery(manifest.trim()));
   }
 });
@@ -41,7 +40,7 @@ async function addManifestToGallery(manifestUrl) {
     console.log('Fetched manifest:', manifest);
 
     if (!manifest.sequences || !manifest.sequences[0].canvases) {
-      console.error('Invalid manifest structure:', manifest);
+      console.error('Invalid manifest structure:', JSON.stringify(manifest, null, 2));
       throw new Error('Manifest does not contain sequences or canvases in the expected format.');
     }
 
@@ -69,6 +68,7 @@ async function addManifestToGallery(manifestUrl) {
 
       const img = document.createElement('img');
       img.src = imageUrl;
+      img.alt = title;
 
       img.addEventListener('click', () => {
         viewer.open(highResUrl);
@@ -124,14 +124,38 @@ document.getElementById('addManifest').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('generateLink').addEventListener('click', () => {
+document.getElementById('saveCollection').addEventListener('click', async () => {
   const title = document.getElementById('pageTitle').value;
+  const collectionName = document.getElementById('collectionName').value;
   const manifestUrls = Array.from(document.querySelectorAll('#gallery .card img')).map(img => img.src.split('/full/')[0] + '/info.json');
 
-  const queryParams = new URLSearchParams();
-  if (title) queryParams.set('title', encodeURIComponent(title));
-  if (manifestUrls.length > 0) queryParams.set('manifests', manifestUrls.map(url => encodeURIComponent(url)).join(','));
+  if (!collectionName) {
+    alert('Please enter a collection name');
+    return;
+  }
 
-  const url = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
-  prompt('Shareable URL:', url);
+  const collection = {
+    title,
+    manifests: manifestUrls
+  };
+
+  try {
+    const response = await fetch('https://iiif-backend.vercel.app/saveCollection', { // Replace with your Vercel URL
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ collectionName, collection })
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      alert('Collection saved successfully!');
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error saving collection:', error);
+    alert('Failed to save collection. Check console for details.');
+  }
 });
