@@ -117,15 +117,17 @@ document.getElementById('saveCollection').addEventListener('click', async () => 
   const collectionName = document.getElementById('collectionName').value;
   const manifestUrls = Array.from(document.querySelectorAll('#gallery .card img')).map(img => img.src.split('/full/')[0] + '/info.json');
 
-  if (!collectionName) {
-    alert('Please enter a collection name');
+  if (!collectionName || !manifestUrls.length) {
+    alert('Please enter a collection name and add at least one item to the gallery');
     return;
   }
 
   const collection = {
     title,
-    manifests: manifestUrls
+    manifests: manifestUrls // Ensure this contains all the necessary manifests
   };
+
+  console.log('Collection being sent:', collection); // Add logging for debugging
 
   try {
     const response = await fetch('https://iiif-backend.vercel.app/saveCollection', {
@@ -133,16 +135,19 @@ document.getElementById('saveCollection').addEventListener('click', async () => 
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ collectionName, collection }),
+      body: JSON.stringify({ 
+        collection: {
+          collectionName,  // Include collectionName inside the collection object
+          ...collection // Add any other relevant data
+        }
+      }),
       mode: 'cors' // Ensure CORS mode is set
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to save collection');
+      throw new Error('Failed to save collection');
     }
 
-    const result = await response.json();
     alert('Collection saved successfully!');
   } catch (error) {
     console.error('Error saving collection:', error);
