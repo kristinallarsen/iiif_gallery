@@ -8,6 +8,54 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+//Add event listener to handle retrieval when user clicks the load collection button
+document.getElementById('loadCollection').addEventListener('click', async () => {
+  const collectionName = document.getElementById('loadCollectionName').value;
+
+  if (!collectionName) {
+    alert('Please enter a collection name');
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://iiif-backend.vercel.app/getCollection/${encodeURIComponent(collectionName)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      mode: 'cors',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load collection');
+    }
+
+    const collectionData = await response.json(); // Assuming the server returns the full collection object
+
+    // Repopulate the gallery with the collection data
+    repopulateGallery(collectionData);
+
+    alert('Collection loaded successfully!');
+  } catch (error) {
+    console.error('Error loading collection:', error);
+    alert('Failed to load collection. Check console for details.');
+  }
+});
+
+// Clear current gallery and add images from loaded collection
+function repopulateGallery(collectionData) {
+  const gallery = document.getElementById('gallery');
+  gallery.innerHTML = ''; // Clear the current gallery
+
+  // Assuming the collectionData has properties like collectionName and manifests
+  const manifests = collectionData.manifests;
+
+  manifests.forEach(manifestUrl => {
+    // Use the existing function to add each manifest to the gallery
+    addManifestToGallery(manifestUrl);
+  });
+}
+
 // Utility function to get metadata value by label
 function getMetadataValue(metadata, label) {
   const item = metadata.find((item) => item.label === label);
